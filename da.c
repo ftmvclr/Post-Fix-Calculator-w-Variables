@@ -11,18 +11,33 @@ struct element{
 };
 typedef struct element Element;
 
+Element *push(Element **headPtr, char data);
+int pop(Element **headPtr);
 
 // pointer to char array
 int main(int argc, char *argv[]){
 	Element *headPtr = NULL;
+	Element *tempNode = NULL;
 	printf("successful? %d\n", argc); // this does actually accept each "word" with a whitespace as arg + 1 
 	int i;
 	for(i = 1; i < argc; i++){ // because 0 is the program call
 		printf("%dth arg: %s\n",i, *(argv + i));
+		tempNode = push(&headPtr, *(argv + i)[0]);
+		if(tempNode->op != -1){ // so + - / etc.
+			puts("push success operator");
+			pop(&headPtr);
+		}
+		else if(tempNode->value != -1){
+			puts("push success operand");
+		}
+		else if(tempNode->is_known == 0){
+			puts("pushed a variable");
+		}
 	}
 	// i think like in a loop here you could check whether the newly added node's op is -1 or not
 	// then call for pop and pop should do the popping 3 times thing on its own
 	// PLEASE NO RECURSION THOUGH i care about stack overflows thank you
+
 }
 
 // if this is called then we must have hit on an operator
@@ -55,8 +70,8 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				}
 				// pop 3 elements then call push with final_val
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
-				snprintf(val_str, 20, "%d", final_val);
-				push(headPtr, val_str);
+				snprintf(val_str, 20, "%f", final_val);
+				push(headPtr, *val_str);
 			}
 		}
 	}
@@ -73,10 +88,10 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 	}*/
 }
 
-void push(Element **headPtr, char data){
+Element *push(Element **headPtr, char data){
 	//creation of the node
 
-	Element *newNode = malloc(sizeof(struct element));
+	Element *newNode = (Element *) malloc(sizeof(struct element));
 	if(isdigit(data)){
 		newNode->value = data - '0';
 		newNode->is_known = 1;
@@ -90,7 +105,7 @@ void push(Element **headPtr, char data){
 	else { // a variable
 		newNode->value = -1;
 		newNode->op = -1;
-		newNode->is_known = -1;
+		newNode->is_known = 0;
 	}
 	newNode->bottom = NULL;
 
@@ -102,4 +117,6 @@ void push(Element **headPtr, char data){
 		newNode->bottom = *headPtr;
 		*headPtr = newNode;
 	}
+	return newNode;
 }
+
