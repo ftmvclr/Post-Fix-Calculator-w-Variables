@@ -21,8 +21,12 @@ int main(int argc, char *argv[]){
 	printf("successful? %d\n", argc); // this does actually accept each "word" with a whitespace as arg + 1 
 	int i;
 	for(i = 1; i < argc; i++){ // because 0 is the program call
-		printf("%dth arg: %s\n",i, *(argv + i));
-		tempNode = push(&headPtr, *(argv + i)[0]);
+		printf("%dth arg: %s\n", i, *(argv + i));
+		tempNode = push(&headPtr, *(argv + i));
+		if(tempNode == NULL) {
+			puts("malloc failed?");
+			break;
+		}
 		if(tempNode->op != -1){ // so + - / etc.
 			puts("push success operator");
 			pop(&headPtr);
@@ -68,10 +72,16 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				case EXPONENT: final_val = pow(operands[0], operands[1]); break;
 				default: puts("look into line 53");
 				}
-				// pop 3 elements then call push with final_val
+				// pop 3 elements then just add the result here honestly
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
-				snprintf(val_str, 20, "%f", final_val);
-				push(headPtr, *val_str);
+				Element *newNode = (Element *)malloc(sizeof(struct element));
+				if(*headPtr == NULL && newNode != NULL){
+					*headPtr = newNode;
+				}
+				else if(newNode != NULL){
+					newNode->bottom = *headPtr;
+					*headPtr = newNode;
+				}
 			}
 		}
 	}
@@ -88,24 +98,34 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 	}*/
 }
 
-Element *push(Element **headPtr, char data){
+Element *push(Element **headPtr, char *dataS){
 	//creation of the node
 
-	Element *newNode = (Element *) malloc(sizeof(struct element));
-	if(isdigit(data)){
-		newNode->value = data - '0';
+	Element *newNode = (Element *)malloc(sizeof(struct element));
+	if(newNode == NULL) {
+		return NULL;
+	}
+
+	// Check if the FIRST char of the string is a digit
+	if(isdigit((unsigned char)dataS[0])) {
+		// Use strtol to convert the WHOLE string ("62" -> 62)
+		newNode->value = strtol(dataS, NULL, 10);
 		newNode->is_known = 1;
 		newNode->op = -1;
 	}
-	else if(data == '-' || data == '+' || data == '*' || data == '/' || data == '^'){
-		newNode->value = -1;
-		newNode->op = data;
-		newNode->is_known = 1;
-	}
-	else { // a variable
-		newNode->value = -1;
-		newNode->op = -1;
-		newNode->is_known = 0;
+	// Check if it's a 1-char-long string
+	else if(strlen(dataS) == 1) {
+		char data = dataS[0];
+		if(data == '-' || data == '+' || data == '*' || data == '/' || data == '^') {
+			newNode->value = -1;
+			newNode->op = data;
+			newNode->is_known = 1;
+		}
+		else { // a variable
+			newNode->value = -1;
+			newNode->op = -1;
+			newNode->is_known = 0;
+		}
 	}
 	newNode->bottom = NULL;
 
@@ -119,4 +139,3 @@ Element *push(Element **headPtr, char data){
 	}
 	return newNode;
 }
-
