@@ -1,17 +1,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 enum operator {MULTIPLICATION = 42, ADDITION, SUBTRACTION = 45, DIVISION = 47, EQUALS = 61, EXPONENT = 94};
 struct element{
-	int value; // the value if it is an operand, -1 if not 
+	double value; // the value if it is an operand, -1 if not 
 	char op; // the char if it is an operator, -1 if not an operator (EOF)
 	int is_known; // 0 means variable (letter), 1 means "value or op" is not -1
 	struct element *bottom; // for the stack
 };
 typedef struct element Element;
 
-Element *push(Element **headPtr, char data);
+Element *push(Element **headPtr, char *dataS);
 int pop(Element **headPtr);
 
 // pointer to char array
@@ -75,6 +77,11 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				// pop 3 elements then just add the result here honestly
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
 				Element *newNode = (Element *)malloc(sizeof(struct element));
+				if(newNode == NULL) return; // run
+				newNode->value = final_val;
+				newNode->bottom = NULL;
+				newNode->op = -1;
+				newNode->is_known = 1; // yes!
 				if(*headPtr == NULL && newNode != NULL){
 					*headPtr = newNode;
 				}
