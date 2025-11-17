@@ -71,7 +71,7 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				case ADDITION: final_val = operands[0] + operands[1]; break;
 				case SUBTRACTION: final_val = operands[0] - operands[1]; break;
 				case DIVISION: final_val = operands[0] / operands[1]; break;
-				case EXPONENT: final_val = pow(operands[0], operands[1]); break;
+				case EXPONENT: final_val = pow(operands[1], operands[0]); break; // check if this is the order
 				default: puts("look into line 53");
 				}
 				// pop 3 elements then just add the result here honestly
