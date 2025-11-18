@@ -62,16 +62,16 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 		this = (*headPtr)->op;
 		if((*headPtr)->bottom->is_known && (*headPtr)->bottom->value != -1){
 			// the second from the top is an operand!
-			operands[0] = (*headPtr)->bottom->value;
+			operands[1] = (*headPtr)->bottom->value;
 			if((*headPtr)->bottom->bottom->is_known && (*headPtr)->bottom->bottom->value != -1){
 				// third from the top also is an operand so do calculations here congrats!!!!
-				operands[1] = (*headPtr)->bottom->bottom->value;
+				operands[0] = (*headPtr)->bottom->bottom->value;
 				switch(this){
 				case MULTIPLICATION: final_val = operands[0] * operands[1]; break;
 				case ADDITION: final_val = operands[0] + operands[1]; break;
 				case SUBTRACTION: final_val = operands[0] - operands[1]; break;
 				case DIVISION: final_val = operands[0] / operands[1]; break;
-				case EXPONENT: final_val = pow(operands[1], operands[0]); break; // check if this is the order
+				case EXPONENT: final_val = pow(operands[0], operands[1]); break; // check if this is the order
 				default: puts("look into line 53");
 				}
 				// pop 3 elements then just add the result here honestly
@@ -89,6 +89,8 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 					newNode->bottom = *headPtr;
 					*headPtr = newNode;
 				}
+				printf("we popped 3 elements and inserted this instead:"\
+					"%f, due to the operation %c: \n", final_val, this);
 			}
 		}
 	}
