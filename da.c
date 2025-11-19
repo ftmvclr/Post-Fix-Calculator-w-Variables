@@ -15,18 +15,23 @@ typedef struct element Element;
 
 Element *push(Element **headPtr, char *dataS);
 int pop(Element **headPtr);
+Element *equalityCheck;
+int var_count = 0;
 
 // pointer to char array
 int main(int argc, char *argv[]){
+	equalityCheck = (Element *)malloc(sizeof(struct element));
+	if(equalityCheck == NULL) return -1;
+
 	Element *headPtr = NULL;
 	Element *tempNode = NULL;
-	printf("successful? %d\n", argc); // this does actually accept each "word" with a whitespace as arg + 1 
+	printf("successful? %d\n", argc - 1); // this does actually accept each "word" with a whitespace as arg + 1 
 	int i;
 	for(i = 1; i < argc; i++){ // because 0 is the program call
 		printf("%dth arg: %s\n", i, *(argv + i));
 		tempNode = push(&headPtr, *(argv + i));
-		if(tempNode == NULL) {
-			puts("malloc failed?");
+		if(tempNode == NULL || tempNode == equalityCheck) {
+			puts("malloc failed? OR we hit \"=\"\n");
 			break;
 		}
 		if(tempNode->op != -1){ // so + - / etc.
@@ -38,17 +43,20 @@ int main(int argc, char *argv[]){
 		}
 		else if(tempNode->is_known == 0){
 			puts("pushed a variable");
+			var_count++; // should work.
 		}
-	}
-	// i think like in a loop here you could check whether the newly added node's op is -1 or not
-	// then call for pop and pop should do the popping 3 times thing on its own
-	// PLEASE NO RECURSION THOUGH i care about stack overflows thank you
+	}// traversed the input and simplified the expression at this point
+	printf("LOOK here \n%d", var_count);
+	// now what?
+	// let's have the count of variables i think if we knew about that
+	// we could strategize better? do i have to do it recursively??? noooooooooooo
+	// could loop honestly cant i
 
 }
 
 // if this is called then we must have hit on an operator
 int pop(Element **headPtr){ // we need to pop 3 times!!
-	int operands[2] = {0};
+	double operands[2] = {0};
 	enum operator this = 0;
 	double final_val = 0;
 	char *val_str = NULL;
@@ -77,7 +85,7 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				// pop 3 elements then just add the result here honestly
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
 				Element *newNode = (Element *)malloc(sizeof(struct element));
-				if(newNode == NULL) return; // run
+				if(newNode == NULL) return -1; // run
 				newNode->value = final_val;
 				newNode->bottom = NULL;
 				newNode->op = -1;
@@ -129,6 +137,9 @@ Element *push(Element **headPtr, char *dataS){
 			newNode->value = -1;
 			newNode->op = data;
 			newNode->is_known = 1;
+		}
+		else if(data == '='){
+			newNode = equalityCheck;
 		}
 		else { // a variable
 			newNode->value = -1;
