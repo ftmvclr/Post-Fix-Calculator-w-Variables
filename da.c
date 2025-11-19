@@ -4,24 +4,39 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+// integer check could be like subtracting original number from its redefinition with int?
+// like a = 4.3 then we just go for a new initialization which is:
+// int b = a; then this will be 4 and we can substract a - b == 0?
+// even ternary op would fit just fine here and there 
+
 enum operator {MULTIPLICATION = 42, ADDITION, SUBTRACTION = 45, DIVISION = 47, EQUALS = 61, EXPONENT = 94};
 struct element{
 	double value; // the value if it is an operand, -1 if not 
 	char op; // the char if it is an operator, -1 if not an operator (EOF)
 	int is_known; // 0 means variable (letter), 1 means "value or op" is not -1
+	char var_name; // -1 if not a variable
 	struct element *bottom; // for the stack
 };
 typedef struct element Element;
 
 Element *push(Element **headPtr, char *dataS);
 int pop(Element **headPtr);
+void stack_printer(Element *headPtr);
+Element *stack_reverser(Element **headPtr);
+
 Element *equalityCheck;
 int var_count = 0;
+int option_count = 0;
 
 // pointer to char array
 int main(int argc, char *argv[]){
 	equalityCheck = (Element *)malloc(sizeof(struct element));
 	if(equalityCheck == NULL) return -1;
+	equalityCheck->value = -1;
+	equalityCheck->op = -1;
+	equalityCheck->is_known = 1; // technically
+	equalityCheck->var_name = -1;
+	equalityCheck->bottom = NULL;
 
 	Element *headPtr = NULL;
 	Element *tempNode = NULL;
@@ -46,12 +61,25 @@ int main(int argc, char *argv[]){
 			var_count++; // should work.
 		}
 	}// traversed the input and simplified the expression at this point
-	printf("LOOK here \n%d", var_count);
 	// now what?
 	// let's have the count of variables i think if we knew about that
+	option_count = pow(2, var_count); // n
 	// we could strategize better? do i have to do it recursively??? noooooooooooo
+	stack_printer(headPtr);
+	stack_reverser(&headPtr);
 	// could loop honestly cant i
-
+	int varnum = 1; // first variable, we gotta iterate with this too until it is equal to var_count
+	for(i = 1; i <= option_count; i++){ // which option we are at
+		for(; varnum <= var_count; varnum++){ // which variable we are at
+			// is an operator IF: floor(i/(option_count / 2*varnum))% 2 <= 1
+			if((int)floor(i / (option_count / 2.0 * varnum)) % 2 <= 1){ // why does floor even return float??????
+				// test varnum being an operator!!!
+			}
+			else{
+				// test it being a positive integer instead
+			}
+		}
+	}
 }
 
 // if this is called then we must have hit on an operator
@@ -137,6 +165,7 @@ Element *push(Element **headPtr, char *dataS){
 			newNode->value = -1;
 			newNode->op = data;
 			newNode->is_known = 1;
+			newNode->var_name = -1;
 		}
 		else if(data == '='){
 			newNode = equalityCheck;
@@ -145,6 +174,7 @@ Element *push(Element **headPtr, char *dataS){
 			newNode->value = -1;
 			newNode->op = -1;
 			newNode->is_known = 0;
+			newNode->var_name = data;
 		}
 	}
 	newNode->bottom = NULL;
@@ -158,4 +188,34 @@ Element *push(Element **headPtr, char *dataS){
 		*headPtr = newNode;
 	}
 	return newNode;
+}
+
+void stack_printer(Element *headPtr){
+	while(headPtr){ // when it is not null basically
+		if(headPtr->is_known)
+			if(headPtr->value != -1)
+				printf("%f ", headPtr->value);
+			else
+				printf("%c ", headPtr->op);
+		else
+			printf("%c ", headPtr->var_name);
+		headPtr = headPtr->bottom;
+	}
+}
+
+Element *stack_reverser(Element **headPtr){
+	Element *newHeadPtr = NULL;
+	Element *previous = NULL;
+	Element *current = *headPtr;
+	Element *next = NULL;
+
+	while(current){
+		next = current->bottom;
+		current->bottom = previous;
+		previous = current;
+		current = next;
+	}
+	newHeadPtr = previous;
+	stack_printer(newHeadPtr);
+	return newHeadPtr;
 }
