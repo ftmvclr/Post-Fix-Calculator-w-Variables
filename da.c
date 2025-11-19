@@ -9,8 +9,15 @@
 // int b = a; then this will be 4 and we can substract a - b == 0?
 // even ternary op would fit just fine here and there 
 
+// also what if we kept the pointers to these variable nodes in some array, might be easier to adjust and then test?
+// ye just update them and go for solve stack or something? i think we can implement one more function for just that
+// we now have a whole linked list dedicated to holding variables we can traverse them and like in a function
+// we could send some array with values like 1,0s which indicate if they are op or num
+// then in that function what do we test though 
+
 enum operator {MULTIPLICATION = 42, ADDITION, SUBTRACTION = 45, DIVISION = 47, EQUALS = 61, EXPONENT = 94};
-struct element{
+
+struct element{ // 
 	double value; // the value if it is an operand, -1 if not 
 	char op; // the char if it is an operator, -1 if not an operator (EOF)
 	int is_known; // 0 means variable (letter), 1 means "value or op" is not -1
@@ -18,19 +25,26 @@ struct element{
 	struct element *bottom; // for the stack
 };
 typedef struct element Element;
+Element *equalityCheck;
+
+struct varPtrs{ // linked list
+	struct varPtrs *next; // linker
+	Element *this; // datatype 
+} *varptr_starter; // should be null initially
+typedef struct varPtrs VarPtrs;
 
 Element *push(Element **headPtr, char *dataS);
 int pop(Element **headPtr);
 void stack_printer(Element *headPtr);
 Element *stack_reverser(Element **headPtr);
+void addToVarsLL(Element *node);
 
-Element *equalityCheck;
 int var_count = 0;
 int option_count = 0;
 
 // pointer to char array
 int main(int argc, char *argv[]){
-	equalityCheck = (Element *)malloc(sizeof(struct element));
+	equalityCheck = (Element *)malloc(sizeof(struct element)); // feels redundant but don't have a better alt
 	if(equalityCheck == NULL) return -1;
 	equalityCheck->value = -1;
 	equalityCheck->op = -1;
@@ -40,6 +54,7 @@ int main(int argc, char *argv[]){
 
 	Element *headPtr = NULL;
 	Element *tempNode = NULL;
+
 	printf("successful? %d\n", argc - 1); // this does actually accept each "word" with a whitespace as arg + 1 
 	int i;
 	for(i = 1; i < argc; i++){ // because 0 is the program call
@@ -63,7 +78,7 @@ int main(int argc, char *argv[]){
 	}// traversed the input and simplified the expression at this point
 	// now what?
 	// let's have the count of variables i think if we knew about that
-	option_count = pow(2, var_count); // n
+	option_count = (int)pow(2, var_count); // n
 	// we could strategize better? do i have to do it recursively??? noooooooooooo
 	stack_printer(headPtr);
 	stack_reverser(&headPtr);
@@ -76,9 +91,10 @@ int main(int argc, char *argv[]){
 				// test varnum being an operator!!!
 			}
 			else{
-				// test it being a positive integer instead
+				// test varnum being a positive integer instead in whatever # option we are at
 			}
 		}
+		// we need some logic to save the true ones in like an array so that we can print them right?
 	}
 }
 
@@ -130,17 +146,7 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 			}
 		}
 	}
-	// pop all stuff, calculate and then push the new entry
-
-	//int t = (*headPtr)->num;
-	//*headPtr = (*headPtr)->bottom;
 	return 0;
-	/*else if((*headPtr)->bottom == NULL){
-		puts("removing the last item");
-		int t = (*headPtr)->num;
-		*headPtr = NULL;
-		return t;
-	}*/
 }
 
 Element *push(Element **headPtr, char *dataS){
@@ -175,6 +181,7 @@ Element *push(Element **headPtr, char *dataS){
 			newNode->op = -1;
 			newNode->is_known = 0;
 			newNode->var_name = data;
+			addToVarsLL(newNode);
 		}
 	}
 	newNode->bottom = NULL;
@@ -201,6 +208,7 @@ void stack_printer(Element *headPtr){
 			printf("%c ", headPtr->var_name);
 		headPtr = headPtr->bottom;
 	}
+	puts("");
 }
 
 Element *stack_reverser(Element **headPtr){
@@ -218,4 +226,20 @@ Element *stack_reverser(Element **headPtr){
 	newHeadPtr = previous;
 	stack_printer(newHeadPtr);
 	return newHeadPtr;
+}
+
+void addToVarsLL(Element *node){
+	VarPtrs *temp = (VarPtrs *)malloc(sizeof(VarPtrs));
+	if(temp == NULL) return;
+	temp->next = NULL;
+	temp->this = node;
+	if(varptr_starter == NULL){
+		// so first node 
+		varptr_starter = temp;
+	}
+	else{
+		// not the first node
+		temp->next = varptr_starter;
+		varptr_starter = temp;
+	}
 }
