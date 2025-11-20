@@ -23,6 +23,7 @@ struct element{ //
 	int is_known; // 0 means variable (letter), 1 means "value or op" is not -1
 	char var_name; // -1 if not a variable
 	struct element *bottom; // for the stack
+	int currently_what;
 };
 typedef struct element Element;
 Element *equalityCheck;
@@ -38,6 +39,7 @@ int pop(Element **headPtr);
 void stack_printer(Element *headPtr);
 Element *stack_reverser(Element **headPtr);
 void addToVarsLL(Element *node);
+void options_test(Element *headPtr);
 
 int var_count = 0;
 int option_count = 0;
@@ -83,19 +85,78 @@ int main(int argc, char *argv[]){
 	stack_printer(headPtr);
 	stack_reverser(&headPtr);
 	// could loop honestly cant i
+	VarPtrs *current = varptr_starter;
 	int varnum = 1; // first variable, we gotta iterate with this too until it is equal to var_count
 	for(i = 1; i <= option_count; i++){ // which option we are at
 		for(; varnum <= var_count; varnum++){ // which variable we are at
 			// is an operator IF: floor(i/(option_count / 2*varnum))% 2 <= 1
-			if((int)floor(i / (option_count / 2.0 * varnum)) % 2 <= 1){ // why does floor even return float??????
+			if((int)floor(i / (option_count / pow(2, varnum))) % 2 <= 1){ // why does floor even return float??????
 				// test varnum being an operator!!!
+				current->this->currently_what = 1;
+				current->this->op = MULTIPLICATION; // a placeholder fornow
+				current->this->value = -1;
 			}
 			else{
 				// test varnum being a positive integer instead in whatever # option we are at
+				current->this->currently_what = 0;
+				current->this->op = -1;
+				current->this->value = 1; // so that it counts as a valid value FOR NOW (placeholder)
 			}
 		}
+		recursive_test(varptr_starter, headPtr);
 		// we need some logic to save the true ones in like an array so that we can print them right?
+		// NO need for saving just print the moment you find the right option with right values.
 	}
+
+}
+// at this point all of our variables were artificially updated 
+// ALL YOU HAVE TO DO IS GO THROUGH THE STACK AND POP THEM NODES in a loop
+void recursive_test(VarPtrs *current_var, Element *headPtr){
+	if(current_var == NULL) { // base case: end of list
+		double result = pop_but_not_brutal(headPtr);
+
+		if(result == 0 || fabs(result) < 0.00001){ // numerical methods paranoia
+			printf("(");
+			int i = 0;
+			VarPtrs *printer = varptr_starter;
+
+			while(printer != NULL) {
+				if(printer->this->currently_what == 1){ // operator
+					printf("%c", printer->this->op);
+				}
+				else { // num
+					printf("%.0f", printer->this->value); // .0f so it formats like int
+				}
+				if(printer->next != NULL) // , unless it is the end
+					printf(", ");
+
+				printer = printer->next;
+			}
+			printf(")\n");
+		}
+		return; // this was basically one option's one solution there MIGHT be more
+	}
+
+	if(current_var->this->currently_what == 1) { // operator
+		char ops[] = {'+', '-', '*', '/', '^'};
+		int i;
+		for(i = 0; i < 5; i++) {
+			current_var->this->op = ops[i];
+			recursive_test(current_var->next, headPtr);
+		}
+	}
+
+	else {
+		int i;
+		for(i = 1; i <= 20; i++) {
+			current_var->this->value = i * 1.0;
+			recursive_test(current_var->next, headPtr);
+		}
+	}
+}
+
+int pop_but_not_brutal(Element *headPtr){
+	return -1; // for fail
 }
 
 // if this is called then we must have hit on an operator
