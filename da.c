@@ -39,7 +39,7 @@ int pop(Element **headPtr);
 void stack_printer(Element *headPtr);
 Element *stack_reverser(Element **headPtr);
 void addToVarsLL(Element *node);
-void options_test(Element *headPtr);
+void recursive_test(VarPtrs *current_var, Element *headPtr);
 
 int var_count = 0;
 int option_count = 0;
