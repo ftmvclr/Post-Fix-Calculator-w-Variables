@@ -1,9 +1,11 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
 #include <ctype.h>
 
+// NAN = not a number; this will be used throughout the program
 // integer check could be like subtracting original number from its redefinition with int?
 // like a = 4.3 then we just go for a new initialization which is:
 // int b = a; then this will be 4 and we can substract a - b == 0?
@@ -23,7 +25,7 @@ struct element{
 	int is_known; // 0 means variable (letter), 1 means "value or op" is not -1
 	char var_name; // -1 if not a variable
 	struct element *bottom; // for the stack
-	int currently_what;
+	int currently_what; // this is used to represent variables' temporarily assigned roles
 };
 typedef struct element Element;
 Element *equalityCheck;
@@ -41,12 +43,36 @@ Element *stack_reverser(Element **headPtr);
 void addToVarsLL(Element *node);
 void recursive_test(VarPtrs *current_var, Element *headPtr);
 double pop_but_not_brutal(Element *headPtr);
+void one_use_func();
 
 int var_count = 0;
 int option_count = 0;
 
 // pointer to char array
-int main(int argc, char *argv[]){
+int main(){
+	// changed main(int argc, char *argv[]) implementation
+	int argc = 0;
+	char *argv[100]; // limiting it to 100 arguments
+	char string_reader[100] = {'\0'}; // can't be not null-terminated
+
+	argv[0] = "da.exe"; // just like the command-line version
+	argc = 1;
+
+	FILE *inputPtr = fopen("input.txt", "r"); // read-only
+	if(inputPtr == NULL) {
+		return -1;
+	}
+
+	// this loop reads strings with 99 char limit
+	while(argc < 100 && fscanf(inputPtr, "%99s", string_reader) == 1) {
+		argv[argc] = (char *)malloc(strlen(string_reader) + 1);
+		if(argv[argc] == NULL)
+			break;
+		strcpy(argv[argc], string_reader); // strings will mostly be just 1 character but this allows flexibility in input
+		argc++;
+	}
+	fclose(inputPtr); // prevents leaks or something, good habit they said
+
 	equalityCheck = (Element *)malloc(sizeof(struct element)); // feels redundant but don't have a better alt
 	if(equalityCheck == NULL) return -1;
 	equalityCheck->value = -1;
@@ -58,35 +84,36 @@ int main(int argc, char *argv[]){
 	Element *headPtr = NULL;
 	Element *tempNode = NULL;
 
-	printf("successful? %d\n", argc - 1); // this does actually accept each "word" with a whitespace as arg + 1 
+	//	printf("successful? %d\n", argc - 1); // this does actually accept each "word" with a whitespace as arg + 1 
 	int i;
 	for(i = 1; i < argc; i++){ // because 0 is the program call
-		printf("%dth arg: %s\n", i, *(argv + i));
+		//		printf("%dth arg: %s\n", i, *(argv + i));
 		tempNode = push(&headPtr, *(argv + i));
+		// push first then do necessary operations
 		if(tempNode == NULL || tempNode == equalityCheck) {
-			puts("malloc failed? OR we hit \"=\"\n");
+			//			puts("malloc failed? OR we hit \"=\"\n");
 			break;
 		}
 		if(tempNode->op != -1){ // so + - / etc.
-			puts("push success operator");
+			//			puts("push success operator");
 			pop(&headPtr);
 		}
-		else if(tempNode->value != -1){
-			puts("push success operand");
-		}
+		//		else if(tempNode->value != -1){
+		//			puts("push success operand");
+		//		}
 		else if(tempNode->is_known == 0){
-			puts("pushed a variable");
+			//			puts("pushed a variable");
 			var_count++; // should work.
 		}
 	}// traversed the input and simplified the expression at this point
 	// now what?
 	// let's have the count of variables i think if we knew about that
 	option_count = (int)(pow(2, var_count) + 0.5); // this redundancy is to prevent it from miscalculating
-	// we could strategize better? do i have to do it recursively??? noooooooooooo
-	stack_printer(headPtr);
+
+	//	stack_printer(headPtr);
 	stack_reverser(&headPtr);
-	stack_printer(headPtr);
-	// could loop honestly cant i
+	//	stack_printer(headPtr);
+		// could loop honestly cant i
 	int varnum; // first variable, we gotta iterate with this too until it is equal to var_count
 	for(i = 1; i <= option_count; i++){ // which option we are at
 		VarPtrs *current = varptr_starter;
@@ -109,15 +136,7 @@ int main(int argc, char *argv[]){
 			}
 			current = current->next;
 		}
-		printf("Option %d: ", i);
-		VarPtrs *traversing_options = varptr_starter;
-		while(traversing_options){ // while it is not null
-			printf("%c=%s ", traversing_options->this->var_name,
-				(traversing_options->this->currently_what == 1 ? "Operator" : "Operand"));
-			traversing_options = traversing_options->next;
-		}
-		printf("\n");
-
+		one_use_func();
 		recursive_test(varptr_starter, headPtr);
 		// we need some logic to save the true ones in like an array so that we can print them right?
 		// NO need for saving just print the moment you find the right option with right values.
@@ -125,7 +144,7 @@ int main(int argc, char *argv[]){
 
 }
 // at this point all of our variables were artificially updated 
-// ALL YOU HAVE TO DO IS GO THROUGH THE STACK AND POP THEM NODES in a loop
+// ALL YOU HAVE TO DO IS GO THROUGH THE STACK AND POP THEM NODES in a loop, update: gave in to recursive 
 void recursive_test(VarPtrs *current_var, Element *headPtr){
 	if(current_var == NULL) { // base case: end of list
 		double result = pop_but_not_brutal(headPtr);
@@ -150,8 +169,9 @@ void recursive_test(VarPtrs *current_var, Element *headPtr){
 			printf(")\n");
 		}
 		return; // this was basically one option's one solution there MIGHT be more
+		// end of the base case
 	}
-
+	// what if it is not the base case?
 	if(current_var->this->currently_what == 1) { // operator
 		char ops[] = {'*', '+', '-', '/', '^'};
 		int i;
@@ -161,7 +181,7 @@ void recursive_test(VarPtrs *current_var, Element *headPtr){
 		}
 	}
 
-	else { // so not one (0), a number
+	else { // so not one not op just a number
 		int i;
 		for(i = 1; i <= 20; i++) {
 			current_var->this->value = i * 1.0;
@@ -192,9 +212,10 @@ double pop_but_not_brutal(Element *headPtr){
 			if(current->is_known && current->op == EQUALS){
 				if(top == 0 && fabs(temp_stack[0]) < 0.00001) // top being zero has to be checked because the first input could simply be zero
 					return 0;
-				return NAN; // Otherwise fail
+				return NAN; // failed, either there are more entries than 1 
+				// or the answer we obtained is simply not "near zero"
 			}
-			// empty?
+			// empty? the sole entry cannot be an operator
 			if(top < 1)
 				return NAN;
 
@@ -202,9 +223,8 @@ double pop_but_not_brutal(Element *headPtr){
 			double left_operand = temp_stack[top--];
 			double result = 0;
 
-			char op_char = current->op; // this var's op, or OG op, again doesn't matter necessarily
-
-			switch(op_char) {
+			// this var's op, or OG op, again doesn't matter necessarily
+			switch(current->op) {
 			case MULTIPLICATION: result = left_operand * right_operand; break;
 			case ADDITION: result = left_operand + right_operand; break;
 			case SUBTRACTION: result = left_operand - right_operand; break;
@@ -260,16 +280,17 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				case SUBTRACTION: final_val = operands[0] - operands[1]; break;
 				case DIVISION: final_val = operands[0] / operands[1]; break;
 				case EXPONENT: final_val = pow(operands[0], operands[1]); break; // check if this is the order
-				default: puts("look into line 53");
+				default: puts("unprecedented error? this should not happen"); //puts("look into line 53");
 				}
 				// pop 3 elements then just add the result here honestly
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
 				Element *newNode = (Element *)malloc(sizeof(struct element));
-				if(newNode == NULL) return -1; // run
+				if(newNode == NULL)
+					return -1; // run
 				newNode->value = final_val;
 				newNode->bottom = NULL;
 				newNode->op = -1;
-				newNode->is_known = 1; // yes!
+				newNode->is_known = 1;
 				if(*headPtr == NULL && newNode != NULL){
 					*headPtr = newNode;
 				}
@@ -277,8 +298,8 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 					newNode->bottom = *headPtr;
 					*headPtr = newNode;
 				}
-				printf("we popped 3 elements and inserted this instead:"\
-					"%f, due to the operation %c: \n", final_val, this);
+				//				printf("we popped 3 elements and inserted this instead:"\
+					//				"%f, due to the operation %c: \n", final_val, this);
 			}
 		}
 	}
@@ -293,14 +314,14 @@ Element *push(Element **headPtr, char *dataS){
 		return NULL;
 	}
 
-	// Check if the FIRST char of the string is a digit
-	if(isdigit((unsigned char)dataS[0])) {
-		// Use strtol to convert the WHOLE string ("62" -> 62)
-		newNode->value = strtol(dataS, NULL, 10);
+	// if first char of that "string" is digit, it implies being fully digits/numbers
+	if(isdigit((unsigned char)dataS[0])) { // this causes crash if no cast?
+		// passing null so that we don't keep track of where the number ends (memory wise)
+		newNode->value = strtol(dataS, NULL, 10); // 10 is for base-10, decimal
 		newNode->is_known = 1;
 		newNode->op = -1;
 	}
-	// Check if it's a 1-char-long string
+	// if it is just a char basically (it will mostly be this way)
 	else if(strlen(dataS) == 1) {
 		char data = dataS[0];
 		if(data == '-' || data == '+' || data == '*' || data == '/' || data == '^') {
@@ -360,7 +381,6 @@ Element *stack_reverser(Element **headPtr){
 		current = next;
 	}
 	newHeadPtr = previous;
-	//	stack_printer(newHeadPtr);
 	*headPtr = newHeadPtr;
 	return newHeadPtr;
 }
@@ -381,4 +401,22 @@ void addToVarsLL(Element *node){
 		tail->next = temp;
 		tail = temp;
 	}
+}
+
+void one_use_func(){
+	static int a = 0;
+	if(a > 0)
+		return;
+	VarPtrs *p = varptr_starter;
+	printf("solution(s) for (");
+	while(p){ // is not null
+		printf("%c", p->this->var_name);
+		if(p->next != NULL)
+			printf(", ");
+		else
+			printf("):\n");
+		p = p->next;
+	}
+	a++;
+	// this function is called multiple times but we only need it to print this once
 }
