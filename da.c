@@ -1,4 +1,6 @@
-#define _CRT_SECURE_NO_WARNINGS
+//Std ID, Name, Surname: 150123017 FATIMA AVCILAR
+
+#define _CRT_SECURE_NO_WARNINGS 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -28,7 +30,6 @@ typedef struct varPtrs VarPtrs;
 
 Element *push(Element **headPtr, char *dataS);
 int pop(Element **headPtr);
-//void stack_printer(Element *headPtr);
 Element *stack_reverser(Element **headPtr);
 void addToVarsLL(Element *node);
 void recursive_test(VarPtrs *current_var, Element *headPtr);
@@ -38,6 +39,7 @@ void one_use_func();
 int var_count = 0;
 int option_count = 0;
 int eqs_right_side = 0; // newly added, adjust the code for this TODO
+int max_num = 20;
 
 int main(){
 	// changed main(int argc, char *argv[]) implementation
@@ -45,7 +47,7 @@ int main(){
 	char *argv[100]; // limiting it to 100 arguments
 	char string_reader[100] = {'\0'}; // can't be not null-terminated
 
-	argv[0] = "da.exe"; // just like the command-line version
+	argv[0] = "150123017prj1.exe"; // just like the command-line version
 	argc = 1;
 
 	FILE *inputPtr = fopen("input.txt", "r"); // read-only
@@ -62,9 +64,10 @@ int main(){
 		argc++;
 	}
 	eqs_right_side = strtol(argv[argc - 1], NULL, 10);
-	fclose(inputPtr); // prevents leaks or something, good habit they said
+	fclose(inputPtr); // prevents leaks, good habit
 
-	equalityCheck = (Element *)malloc(sizeof(struct element)); // feels redundant but don't have a better alt
+	// feels redundant but it is quite vital for the program
+	equalityCheck = (Element *)malloc(sizeof(struct element));
 	if(equalityCheck == NULL) return -1;
 	equalityCheck->value = -1;
 	equalityCheck->op = EQUALS;
@@ -75,10 +78,9 @@ int main(){
 	Element *headPtr = NULL;
 	Element *tempNode = NULL;
 
-	//	printf("successful? %d\n", argc - 1); // this does actually accept each "word" with a whitespace as arg + 1 
 	int i;
+	// pushing and simplifying the given input
 	for(i = 1; i < argc; i++){ // because 0 is the program call
-		//		printf("%dth arg: %s\n", i, *(argv + i));
 		tempNode = push(&headPtr, *(argv + i));
 		// push first then do necessary operations
 		if(tempNode == NULL){
@@ -86,29 +88,23 @@ int main(){
 			return -10; // 
 		}
 		if(tempNode == equalityCheck) {
-			// take the next number here and assing it to the right side of the equation variable
-
 			break;
 		}
 		if(tempNode->op != -1){ // so + - / etc.
-			//			puts("push success operator");
 			pop(&headPtr);
 		}
-		//		else if(tempNode->value != -1){
-		//			puts("push success operand");
-		//		}
 		else if(tempNode->is_known == 0){
-			//			puts("pushed a variable");
-			var_count++; // should work.
+			var_count++; // we need this for the option amount logic.
 		}
 	}// traversed the input and simplified the expression at this point
 
 	// 2 vars => 4 options, 3 vars => 8 options etc.
-	option_count = (int)(pow(2, var_count) + 0.5); // in case 2^3 returns 7.99
+	option_count = (int)(pow(2, var_count) + 0.5); // in case 2^3 returns 7.9999 (just an example)
 	stack_reverser(&headPtr); // technically we need to do calculations from left to right
 
 	int varnum; // first variable, we gotta iterate with this too until it is equal to var_count
 
+	// these loops are to decide which variables are operators for which options!
 	for(i = 1; i <= option_count; i++){ // which option we are at 
 		VarPtrs *current = varptr_starter;
 
@@ -117,7 +113,7 @@ int main(){
 			if(current == NULL)
 				break;
 			if((int)floor(i / (option_count / pow(2, varnum))) % 2 == 1){ // floor returns double, % needs int 
-				// test varnum being an operator!!!
+				// test varnum being an operator
 				current->this->currently_what = 1;
 				current->this->op = MULTIPLICATION; // a placeholder fornow
 				current->this->value = -1;
@@ -139,7 +135,7 @@ int main(){
 void recursive_test(VarPtrs *current_var, Element *headPtr){
 	if(current_var == NULL) { // base case: end of list
 		double result = pop_but_not_brutal(headPtr);
-
+		// deciding if it was a solution or not
 		if((result == eqs_right_side || fabs(result - eqs_right_side) < 0.00001) && !isnan(result)){ // numerical methods paranoia
 			printf("(");
 			int i = 0;
@@ -174,7 +170,7 @@ void recursive_test(VarPtrs *current_var, Element *headPtr){
 
 	else { // so not one not op just a number
 		int i;
-		for(i = 1; i <= 20; i++) {
+		for(i = 1; i <= max_num; i++) {
 			current_var->this->value = i * 1.0;
 			recursive_test(current_var->next, headPtr);
 		}
@@ -229,13 +225,7 @@ double pop_but_not_brutal(Element *headPtr){
 			case EXPONENT: result = round(pow(left_operand, right_operand)); break;
 			default: return NAN;
 			}
-			// is the result an integer?
-			/*if(result - (int)result != 0){
-				return NAN;
-			}*/
-			//if(floor(result) != result){
-				//return NAN;
-		//	}
+			// is the result an integer
 			if(fabs(result - round(result)) > 0.00001) {
 				return NAN;
 			}
@@ -385,7 +375,7 @@ void addToVarsLL(Element *node){
 
 void one_use_func(){
 	static int a = 0;
-	if(a > 0)
+	if(a != 0)
 		return;
 	VarPtrs *p = varptr_starter;
 	printf("solution(s) for (");
