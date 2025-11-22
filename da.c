@@ -37,6 +37,7 @@ void one_use_func();
 
 int var_count = 0;
 int option_count = 0;
+int eqs_right_side = 0; // newly added, adjust the code for this TODO
 
 int main(){
 	// changed main(int argc, char *argv[]) implementation
@@ -60,6 +61,7 @@ int main(){
 		strcpy(argv[argc], string_reader); // strings will mostly be just 1 character but this allows flexibility in input
 		argc++;
 	}
+	eqs_right_side = strtol(argv[argc - 1], NULL, 10);
 	fclose(inputPtr); // prevents leaks or something, good habit they said
 
 	equalityCheck = (Element *)malloc(sizeof(struct element)); // feels redundant but don't have a better alt
@@ -79,8 +81,13 @@ int main(){
 		//		printf("%dth arg: %s\n", i, *(argv + i));
 		tempNode = push(&headPtr, *(argv + i));
 		// push first then do necessary operations
-		if(tempNode == NULL || tempNode == equalityCheck) {
-			//			puts("malloc failed? OR we hit \"=\"\n");
+		if(tempNode == NULL){
+			puts("out of memory, fatal error");
+			return -10; // 
+		}
+		if(tempNode == equalityCheck) {
+			// take the next number here and assing it to the right side of the equation variable
+
 			break;
 		}
 		if(tempNode->op != -1){ // so + - / etc.
@@ -133,7 +140,7 @@ void recursive_test(VarPtrs *current_var, Element *headPtr){
 	if(current_var == NULL) { // base case: end of list
 		double result = pop_but_not_brutal(headPtr);
 
-		if((result == 0 || fabs(result) < 0.00001) && !isnan(result)){ // numerical methods paranoia
+		if((result == eqs_right_side || fabs(result - eqs_right_side) < 0.00001) && !isnan(result)){ // numerical methods paranoia
 			printf("(");
 			int i = 0;
 			VarPtrs *printer = varptr_starter;
@@ -194,8 +201,8 @@ double pop_but_not_brutal(Element *headPtr){
 		else {
 			// success!! you reached equal sign now see what the top of the stack is 
 			if(current->is_known && current->op == EQUALS){
-				if(top == 0 && fabs(temp_stack[0]) < 0.00001) // top being zero has to be checked because the first input could simply be zero
-					return 0;
+				if(top == 0) // top being zero has to be checked because the first input could simply be zero
+					return temp_stack[0];
 				return NAN; // failed, either there are more entries than 1 
 				// or the answer we obtained is simply not "near zero"
 			}
@@ -268,14 +275,14 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				case ADDITION: final_val = operands[0] + operands[1]; break;
 				case SUBTRACTION: final_val = operands[0] - operands[1]; break;
 				case DIVISION: final_val = operands[0] / operands[1]; break;
-				case EXPONENT: final_val = pow(operands[0], operands[1]); break; // check if this is the order
+				case EXPONENT: final_val = pow(operands[0], operands[1]); break;
 				default: puts("unprecedented error? this should not happen"); //puts("look into line 53");
 				}
 				// pop 3 elements then just add the result here honestly
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
 				Element *newNode = (Element *)malloc(sizeof(struct element));
 				if(newNode == NULL)
-					return -1; // run
+					return -1;
 				newNode->value = final_val;
 				newNode->bottom = NULL;
 				newNode->op = -1;
@@ -287,8 +294,6 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 					newNode->bottom = *headPtr;
 					*headPtr = newNode;
 				}
-				//				printf("we popped 3 elements and inserted this instead:"\
-					//				"%f, due to the operation %c: \n", final_val, this);
 			}
 		}
 	}
@@ -320,7 +325,7 @@ Element *push(Element **headPtr, char *dataS){
 			newNode->var_name = -1;
 		}
 		else if(data == '='){
-			newNode = equalityCheck;
+			newNode = equalityCheck; // returning this will end "taking input" 
 		}
 		else { // a variable
 			newNode->value = -1;
@@ -395,18 +400,3 @@ void one_use_func(){
 	a++;
 	// this function is called multiple times but we only need it to print this once
 }
-/* killed function:
-void stack_printer(Element *headPtr){
-	while(headPtr){ // when it is not null basically
-		if(headPtr->is_known)
-			if(headPtr->value != -1)
-				printf("%f ", headPtr->value);
-			else
-				printf("%c ", headPtr->op);
-		else
-			printf("%c ", headPtr->var_name);
-		headPtr = headPtr->bottom;
-	}
-	puts("");
-}
-*/
