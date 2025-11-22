@@ -6,16 +6,6 @@
 #include <ctype.h>
 
 // NAN = not a number; this will be used throughout the program
-// integer check could be like subtracting original number from its redefinition with int?
-// like a = 4.3 then we just go for a new initialization which is:
-// int b = a; then this will be 4 and we can substract a - b == 0?
-// even ternary op would fit just fine here and there 
-
-// also what if we kept the pointers to these variable nodes in some array, might be easier to adjust and then test?
-// ye just update them and go for solve stack or something? i think we can implement one more function for just that
-// we now have a whole linked list dedicated to holding variables we can traverse them and like in a function
-// we could send some array with values like 1,0s which indicate if they are op or num
-// then in that function what do we test though 
 
 enum operator {MULTIPLICATION = 42, ADDITION, SUBTRACTION = 45, DIVISION = 47, EQUALS = 61, EXPONENT = 94};
 
@@ -38,7 +28,7 @@ typedef struct varPtrs VarPtrs;
 
 Element *push(Element **headPtr, char *dataS);
 int pop(Element **headPtr);
-void stack_printer(Element *headPtr);
+//void stack_printer(Element *headPtr);
 Element *stack_reverser(Element **headPtr);
 void addToVarsLL(Element *node);
 void recursive_test(VarPtrs *current_var, Element *headPtr);
@@ -48,7 +38,6 @@ void one_use_func();
 int var_count = 0;
 int option_count = 0;
 
-// pointer to char array
 int main(){
 	// changed main(int argc, char *argv[]) implementation
 	int argc = 0;
@@ -106,23 +95,21 @@ int main(){
 			var_count++; // should work.
 		}
 	}// traversed the input and simplified the expression at this point
-	// now what?
-	// let's have the count of variables i think if we knew about that
-	option_count = (int)(pow(2, var_count) + 0.5); // this redundancy is to prevent it from miscalculating
 
-	//	stack_printer(headPtr);
-	stack_reverser(&headPtr);
-	//	stack_printer(headPtr);
-		// could loop honestly cant i
+	// 2 vars => 4 options, 3 vars => 8 options etc.
+	option_count = (int)(pow(2, var_count) + 0.5); // in case 2^3 returns 7.99
+	stack_reverser(&headPtr); // technically we need to do calculations from left to right
+
 	int varnum; // first variable, we gotta iterate with this too until it is equal to var_count
-	for(i = 1; i <= option_count; i++){ // which option we are at
+
+	for(i = 1; i <= option_count; i++){ // which option we are at 
 		VarPtrs *current = varptr_starter;
 
 		for(varnum = 1; varnum <= var_count; varnum++){ // which variable we are at
-			// is an operator IF: floor(i/(option_count / 2*varnum))% 2 <= 1
+			// is an operator IF: floor(i/(option_count / 2^varnum))% 2 == 1
 			if(current == NULL)
 				break;
-			if((int)floor(i / (option_count / pow(2, varnum))) % 2 == 1){ // why does floor even return float??????
+			if((int)floor(i / (option_count / pow(2, varnum))) % 2 == 1){ // floor returns double, % needs int 
 				// test varnum being an operator!!!
 				current->this->currently_what = 1;
 				current->this->op = MULTIPLICATION; // a placeholder fornow
@@ -136,15 +123,12 @@ int main(){
 			}
 			current = current->next;
 		}
-		one_use_func();
-		recursive_test(varptr_starter, headPtr);
-		// we need some logic to save the true ones in like an array so that we can print them right?
-		// NO need for saving just print the moment you find the right option with right values.
+		one_use_func(); // prints "solutions for (...)"
+		recursive_test(varptr_starter, headPtr); // this will go through every value for the options 
 	}
 
 }
 // at this point all of our variables were artificially updated 
-// ALL YOU HAVE TO DO IS GO THROUGH THE STACK AND POP THEM NODES in a loop, update: gave in to recursive 
 void recursive_test(VarPtrs *current_var, Element *headPtr){
 	if(current_var == NULL) { // base case: end of list
 		double result = pop_but_not_brutal(headPtr);
@@ -202,8 +186,8 @@ double pop_but_not_brutal(Element *headPtr){
 		// this includes both the actual numbers and the variables being checked as an int right now
 		if((current->is_known && current->value != -1) ||
 			(!current->is_known && current->currently_what == 0)){
-			double will_push_this = current->value; // variable value (testing this) OR the actual thing, doesnt matter
-			temp_stack[++top] = will_push_this;
+			// variable value (testing this) OR the actual thing, doesnt matter
+			temp_stack[++top] = round(current->value);
 		}
 
 		// this part is for if it is an operator
@@ -219,8 +203,8 @@ double pop_but_not_brutal(Element *headPtr){
 			if(top < 1)
 				return NAN;
 
-			double right_operand = temp_stack[top--];
-			double left_operand = temp_stack[top--];
+			int right_operand = round(temp_stack[top--]);
+			int left_operand = round(temp_stack[top--]);
 			double result = 0;
 
 			// this var's op, or OG op, again doesn't matter necessarily
@@ -231,19 +215,24 @@ double pop_but_not_brutal(Element *headPtr){
 			case DIVISION:
 				if(right_operand == 0)
 					return NAN; // dividing by zero is unhealthy for the compiler 
+				if(left_operand % right_operand != 0)
+					return NAN; // mod non zero implies remainder/ not int
 				result = left_operand / right_operand;
 				break;
-			case EXPONENT: result = pow(left_operand, right_operand); break;
+			case EXPONENT: result = round(pow(left_operand, right_operand)); break;
 			default: return NAN;
 			}
 			// is the result an integer?
-			if(result - (int)result != 0){
-				return NAN;
-			}
-			/*if(floor(result) != result){
+			/*if(result - (int)result != 0){
 				return NAN;
 			}*/
-			temp_stack[++top] = result; // the result is pushed instead to the array-stack
+			//if(floor(result) != result){
+				//return NAN;
+		//	}
+			if(fabs(result - round(result)) > 0.00001) {
+				return NAN;
+			}
+			temp_stack[++top] = round(result); // the result is pushed instead to the array-stack
 		}
 		current = current->bottom;
 	}
@@ -354,20 +343,6 @@ Element *push(Element **headPtr, char *dataS){
 	return newNode;
 }
 
-void stack_printer(Element *headPtr){
-	while(headPtr){ // when it is not null basically
-		if(headPtr->is_known)
-			if(headPtr->value != -1)
-				printf("%f ", headPtr->value);
-			else
-				printf("%c ", headPtr->op);
-		else
-			printf("%c ", headPtr->var_name);
-		headPtr = headPtr->bottom;
-	}
-	puts("");
-}
-
 Element *stack_reverser(Element **headPtr){
 	Element *newHeadPtr = NULL;
 	Element *previous = NULL;
@@ -420,3 +395,18 @@ void one_use_func(){
 	a++;
 	// this function is called multiple times but we only need it to print this once
 }
+/* killed function:
+void stack_printer(Element *headPtr){
+	while(headPtr){ // when it is not null basically
+		if(headPtr->is_known)
+			if(headPtr->value != -1)
+				printf("%f ", headPtr->value);
+			else
+				printf("%c ", headPtr->op);
+		else
+			printf("%c ", headPtr->var_name);
+		headPtr = headPtr->bottom;
+	}
+	puts("");
+}
+*/
