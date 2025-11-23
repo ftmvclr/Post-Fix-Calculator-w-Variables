@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-// NAN = not a number; this will be used throughout the program
+// NAN = not a number; this is used throughout the program
 
 enum operator {MULTIPLICATION = 42, ADDITION, SUBTRACTION = 45, DIVISION = 47, EQUALS = 61, EXPONENT = 94};
 
@@ -38,7 +38,7 @@ void one_use_func();
 
 int var_count = 0;
 int option_count = 0;
-int eqs_right_side = 0; // newly added, adjust the code for this TODO
+int eqs_right_side = 0; // newly added TODO
 int max_num = 20;
 
 int main(){
@@ -206,23 +206,23 @@ double pop_but_not_brutal(Element *headPtr){
 			if(top < 1)
 				return NAN;
 
-			int right_operand = round(temp_stack[top--]);
-			int left_operand = round(temp_stack[top--]);
+			int opR = round(temp_stack[top--]);
+			int opL = round(temp_stack[top--]);
 			double result = 0;
 
 			// this var's op, or OG op, again doesn't matter necessarily
 			switch(current->op) {
-			case MULTIPLICATION: result = left_operand * right_operand; break;
-			case ADDITION: result = left_operand + right_operand; break;
-			case SUBTRACTION: result = left_operand - right_operand; break;
+			case MULTIPLICATION: result = opL * opR; break;
+			case ADDITION: result = opL + opR; break;
+			case SUBTRACTION: result = opL - opR; break;
 			case DIVISION:
-				if(right_operand == 0)
+				if(opR == 0)
 					return NAN; // dividing by zero is unhealthy for the compiler 
-				if(left_operand % right_operand != 0)
+				if(opL % opR != 0)
 					return NAN; // mod non zero implies remainder/ not int
-				result = left_operand / right_operand;
+				result = opL / opR;
 				break;
-			case EXPONENT: result = round(pow(left_operand, right_operand)); break;
+			case EXPONENT: result = round(pow(opL, opR)); break;
 			default: return NAN;
 			}
 			// is the result an integer
@@ -252,7 +252,7 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 		return -1;
 	}
 	else if((*headPtr)->is_known && (*headPtr)->op != -1){
-		// the top is basically the operand we need to use
+		// the top is basically the operator we need to use
 		this = (*headPtr)->op;
 		if((*headPtr)->bottom->is_known && (*headPtr)->bottom->value != -1){
 			// the second from the top is an operand!
@@ -268,8 +268,14 @@ int pop(Element **headPtr){ // we need to pop 3 times!!
 				case EXPONENT: final_val = pow(operands[0], operands[1]); break;
 				default: puts("unprecedented error? this should not happen"); //puts("look into line 53");
 				}
+
+				Element *temp1 = *headPtr;
+				Element *temp2 = (*headPtr)->bottom;
+				Element *temp3 = (*headPtr)->bottom->bottom;
 				// pop 3 elements then just add the result here honestly
 				*headPtr = (*headPtr)->bottom->bottom->bottom;
+				free(temp1); free(temp2); free(temp3); // saving up memory space
+
 				Element *newNode = (Element *)malloc(sizeof(struct element));
 				if(newNode == NULL)
 					return -1;
